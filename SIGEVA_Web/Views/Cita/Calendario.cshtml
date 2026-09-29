@@ -1,0 +1,55 @@
+@model List<CitaModel>
+@{
+    ViewData["Title"] = "Calendario de citas";
+    var fecha = ViewBag.Fecha as DateTime? ?? DateTime.Today;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label fw-semibold mb-1">Fecha</label>
+            <input type="date" name="fecha" class="form-control" value="@fecha.ToString("yyyy-MM-dd")" />
+        </div>
+        <button type="submit" class="btn btn-sg">Ver</button>
+    </form>
+    <a asp-action="Index" class="btn btn-sg-outline">Ver listado</a>
+</div>
+
+<div class="sg-card">
+    <div class="card-body">
+        <h6 class="mb-3 fw-semibold">Citas del @fecha.ToString("dd/MM/yyyy")</h6>
+
+        @if (Model != null && Model.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.FechaHora.ToString("HH:mm")</td>
+                                <td>@item.NombrePaciente</td>
+                                <td>@item.NombreMedico</td>
+                                <td>@item.EstadoCita</td>
+                                <td>@item.Observaciones</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-4">No hay citas para esta fecha.</div>
+        }
+    </div>
+</div>

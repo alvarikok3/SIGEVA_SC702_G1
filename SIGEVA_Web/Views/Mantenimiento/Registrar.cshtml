@@ -1,0 +1,60 @@
+@model MantenimientoModel
+@{
+    ViewData["Title"] = "Registrar mantenimiento";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Index" class="btn btn-sg-outline">Volver</a>
+</div>
+
+<div class="sg-card">
+    <div class="card-body">
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="alert alert-@ViewBag.Tipo text-center">@ViewBag.Mensaje</div>
+        }
+
+        <form asp-action="Registrar" method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="IdEquipo">Equipo</label>
+                    <select asp-for="IdEquipo" class="form-select" required>
+                        <option value="">-- Seleccione --</option>
+                        @foreach (var e in (ViewBag.Equipos as List<SIGEVA_Web.Models.EquipoMedicoModel> ?? new()))
+                        {
+                            <option value="@e.IdEquipo">@e.Nombre (@e.NumeroSerie)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="TipoMantenimiento">Tipo de mantenimiento</label>
+                    <select asp-for="TipoMantenimiento" class="form-select" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="Preventivo">Preventivo</option>
+                        <option value="Correctivo">Correctivo</option>
+                        <option value="Predictivo">Predictivo</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Responsable">Responsable</label>
+                    <input asp-for="Responsable" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="FechaMantenimiento">Fecha</label>
+                    <input asp-for="FechaMantenimiento" type="date" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Costo">Costo</label>
+                    <input asp-for="Costo" type="number" step="0.01" min="0" class="form-control" required />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" asp-for="Descripcion">Descripción</label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="2" placeholder="Descripción del mantenimiento..."></textarea>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-sg">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>

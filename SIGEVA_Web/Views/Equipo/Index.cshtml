@@ -1,0 +1,79 @@
+@model List<EquipoMedicoModel>
+@{
+    ViewData["Title"] = "Equipos médicos";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Registrar" class="btn btn-sg">
+        <i class="bi bi-plus-lg me-1"></i> Registrar equipo
+    </a>
+</div>
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="sg-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Nombre</th>
+                            <th>Marca / Modelo</th>
+                            <th>N° Serie</th>
+                            <th>Responsable</th>
+                            <th>F. Adquisición</th>
+                            <th>Estado</th>
+                            <th class="pe-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3">
+                                    <strong>@item.Nombre</strong>
+                                    @if (!string.IsNullOrWhiteSpace(item.Descripcion))
+                                    {
+                                        <br /><small class="text-muted">@item.Descripcion</small>
+                                    }
+                                </td>
+                                <td>@item.Marca / @item.Modelo</td>
+                                <td><code>@item.NumeroSerie</code></td>
+                                <td>@item.NombreUsuario</td>
+                                <td>@item.FechaAdquisicion.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (item.Estado)
+                                    {
+                                        <span class="badge text-bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">Inactivo</span>
+                                    }
+                                </td>
+                                <td class="pe-3 text-end">
+                                    <a asp-action="Editar" asp-route-id="@item.IdEquipo" class="btn btn-sm btn-sg-outline">Editar</a>
+                                    <a asp-action="CambiarEstado"
+                                       asp-route-id="@item.IdEquipo"
+                                       asp-route-estado="@(!item.Estado)"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       onclick="return confirm('@(item.Estado ? "¿Desactivar" : "¿Activar") este equipo?')">
+                                        @(item.Estado ? "Desactivar" : "Activar")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="sg-card">
+        <div class="card-body text-center text-muted py-5">
+            No hay equipos registrados.
+        </div>
+    </div>
+}

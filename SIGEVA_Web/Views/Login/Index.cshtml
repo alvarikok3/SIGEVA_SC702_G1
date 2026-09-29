@@ -1,0 +1,39 @@
+﻿@model SIGEVA_Web.Models.LoginModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1>
+            <span class="brand-icon"><i class="bi bi-heart-pulse-fill"></i></span>
+            SIGEVA
+        </h1>
+        <p>Iniciar sesión</p>
+    </div>
+    <div class="auth-card-body">
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="alert alert-danger text-center">@ViewBag.Mensaje</div>
+        }
+
+        <form asp-action="Index" method="post">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Correo electrónico</label>
+                <input asp-for="Correo" class="form-control" type="email" placeholder="correo@ejemplo.com" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Contraseña</label>
+                <input asp-for="Contrasena" class="form-control" type="password" placeholder="••••••••" required />
+            </div>
+            <button type="submit" class="btn btn-sg w-100 mb-3">Ingresar</button>
+        </form>
+
+        <div class="text-center">
+            <a asp-controller="Seguridad" asp-action="RecuperarAcceso" class="small">
+                ¿Olvidó su contraseña?
+            </a>
+        </div>
+    </div>
+</div>

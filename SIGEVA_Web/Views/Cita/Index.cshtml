@@ -1,0 +1,63 @@
+@model List<CitaModel>
+@{
+    ViewData["Title"] = "Citas médicas";
+}
+
+<div class="d-flex justify-content-end mb-3 gap-2">
+    <a asp-action="Reporte" class="btn btn-sg-outline">
+        <i class="bi bi-file-earmark-bar-graph me-1"></i> Reporte
+    </a>
+    <a asp-action="Calendario" class="btn btn-sg-outline">
+        <i class="bi bi-calendar3 me-1"></i> Calendario
+    </a>
+    <a asp-action="Registrar" class="btn btn-sg">
+        <i class="bi bi-plus-lg me-1"></i> Nueva cita
+    </a>
+</div>
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="sg-card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Fecha</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Estado</th>
+                            <th class="pe-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3">@item.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@item.NombrePaciente</td>
+                                <td>@item.NombreMedico</td>
+                                <td>
+                                    <span class="badge text-bg-light border">@item.EstadoCita</span>
+                                </td>
+                                <td class="pe-3 text-end">
+                                    <a asp-action="Editar" asp-route-id="@item.IdCita" class="btn btn-sm btn-sg-outline">Editar</a>
+                                    <a asp-action="CambiarEstado" asp-route-id="@item.IdCita" asp-route-estado="Confirmada" class="btn btn-sm btn-outline-success">Confirmar</a>
+                                    <a asp-action="CambiarEstado" asp-route-id="@item.IdCita" asp-route-estado="Cancelada" class="btn btn-sm btn-outline-danger">Cancelar</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="sg-card">
+        <div class="card-body text-center text-muted py-5">
+            No hay citas registradas.
+        </div>
+    </div>
+}

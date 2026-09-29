@@ -1,0 +1,60 @@
+@model EquipoMedicoModel
+@{
+    ViewData["Title"] = "Editar equipo";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Index" class="btn btn-sg-outline">Volver</a>
+</div>
+
+<div class="sg-card">
+    <div class="card-body">
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="alert alert-@ViewBag.Tipo text-center">@ViewBag.Mensaje</div>
+        }
+
+        <form asp-action="Editar" method="post">
+            <input type="hidden" asp-for="IdEquipo" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Nombre">Nombre del equipo</label>
+                    <input asp-for="Nombre" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="NumeroSerie">Número de serie</label>
+                    <input asp-for="NumeroSerie" class="form-control" required />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" asp-for="Descripcion">Descripción</label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Marca">Marca</label>
+                    <input asp-for="Marca" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Modelo">Modelo</label>
+                    <input asp-for="Modelo" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="FechaAdquisicion">Fecha de adquisición</label>
+                    <input asp-for="FechaAdquisicion" type="date" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="IdUsuario">Responsable</label>
+                    <select asp-for="IdUsuario" class="form-select" required>
+                        <option value="">-- Seleccione --</option>
+                        @foreach (var u in (ViewBag.Usuarios as List<SIGEVA_Web.Models.UsuarioListaModel> ?? new()))
+                        {
+                            <option value="@u.IdUsuario">@u.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-sg">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>

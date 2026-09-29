@@ -1,0 +1,113 @@
+﻿@model SIGEVA_Web.Models.UsuarioListaModel
+
+@{
+    ViewData["Title"] = "Editar usuario";
+}
+
+<div class="container-fluid">
+
+    <div class="mb-3">
+        <h2 class="mb-0">Editar usuario</h2>
+        <small class="text-muted">
+            Modifique la información del usuario seleccionado.
+        </small>
+    </div>
+
+    @if (ViewBag.Mensaje != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.Mensaje
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <form asp-controller="Usuario"
+                  asp-action="Editar"
+                  method="post">
+
+                <input type="hidden"
+                       asp-for="IdUsuario" />
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Identificación
+                        </label>
+
+                        <input asp-for="Identificacion"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Nombre completo
+                        </label>
+
+                        <input asp-for="Nombre"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Correo electrónico
+                        </label>
+
+                        <input asp-for="Correo"
+                               type="email"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Rol
+                        </label>
+
+                        <select asp-for="IdRol"
+                                class="form-select"
+                                required>
+
+                            <option value="1">
+                                Administrador
+                            </option>
+
+                            <option value="2">
+                                Usuario
+                            </option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        <i class="bi bi-save"></i>
+                        Guardar cambios
+
+                    </button>
+
+                    <a asp-controller="Usuario"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>

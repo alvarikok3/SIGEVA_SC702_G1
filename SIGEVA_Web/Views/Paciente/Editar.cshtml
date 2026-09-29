@@ -1,0 +1,50 @@
+@model PacienteModel
+@{
+    ViewData["Title"] = "Editar paciente";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Index" class="btn btn-sg-outline">Volver</a>
+</div>
+
+<div class="sg-card">
+    <div class="card-body">
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="alert alert-@ViewBag.Tipo text-center">@ViewBag.Mensaje</div>
+        }
+
+        <form asp-action="Editar" method="post">
+            <input type="hidden" asp-for="IdPaciente" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Identificacion">Identificación</label>
+                    <input asp-for="Identificacion" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Nombre">Nombre</label>
+                    <input asp-for="Nombre" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Telefono">Teléfono</label>
+                    <input asp-for="Telefono" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Correo">Correo</label>
+                    <input asp-for="Correo" type="email" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="FechaNacimiento">Fecha de nacimiento</label>
+                    <input asp-for="FechaNacimiento" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" asp-for="Direccion">Dirección</label>
+                    <input asp-for="Direccion" class="form-control" />
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-sg">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>

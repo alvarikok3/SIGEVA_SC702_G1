@@ -1,0 +1,99 @@
+@model ReporteCitasFiltroModel
+@{
+    ViewData["Title"] = "Reporte de citas";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Index" class="btn btn-sg-outline">Volver al listado</a>
+</div>
+
+<div class="sg-card mb-4">
+    <div class="card-body">
+        <h6 class="fw-semibold mb-3">Filtros</h6>
+        <form asp-action="Reporte" method="post">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" asp-for="FechaInicio">Fecha inicio</label>
+                    <input asp-for="FechaInicio" type="date" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" asp-for="FechaFin">Fecha fin</label>
+                    <input asp-for="FechaFin" type="date" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" asp-for="EstadoCita">Estado</label>
+                    <select asp-for="EstadoCita" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="Programada">Programada</option>
+                        <option value="Realizada">Realizada</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-sg">
+                    <i class="bi bi-search me-1"></i> Generar reporte
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Resultados.Count > 0)
+{
+    <div class="sg-card">
+        <div class="card-body p-0">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                <span class="fw-semibold">@Model.Resultados.Count cita(s) encontrada(s)</span>
+                <span class="fw-semibold">
+                    Programadas: @Model.Resultados.Count(c => c.EstadoCita == "Programada") &nbsp;|&nbsp;
+                    Realizadas: @Model.Resultados.Count(c => c.EstadoCita == "Realizada") &nbsp;|&nbsp;
+                    Canceladas: @Model.Resultados.Count(c => c.EstadoCita == "Cancelada")
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Paciente</th>
+                            <th>Médico</th>
+                            <th>Fecha y hora</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Resultados)
+                        {
+                            <tr>
+                                <td class="ps-3"><strong>@item.NombrePaciente</strong></td>
+                                <td>@item.NombreMedico</td>
+                                <td>@item.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @{
+                                        var badgeClass = item.EstadoCita switch
+                                        {
+                                            "Realizada"  => "text-bg-success",
+                                            "Cancelada"  => "text-bg-danger",
+                                            _            => "text-bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@item.EstadoCita</span>
+                                </td>
+                                <td>@item.Observaciones</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (ViewContext.HttpContext.Request.Method == "POST")
+{
+    <div class="sg-card">
+        <div class="card-body text-center text-muted py-5">
+            No se encontraron citas con los filtros aplicados.
+        </div>
+    </div>
+}

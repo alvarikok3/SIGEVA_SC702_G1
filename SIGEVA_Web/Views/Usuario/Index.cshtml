@@ -1,0 +1,160 @@
+﻿@model List<SIGEVA_Web.Models.UsuarioListaModel>
+
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Administración de usuarios</h2>
+            <small class="text-muted">
+                Consulta, edición y control de estado de usuarios.
+            </small>
+        </div>
+
+        <a asp-controller="Usuario"
+           asp-action="Registrar"
+           class="btn btn-primary">
+            <i class="bi bi-person-plus"></i>
+            Nuevo usuario
+        </a>
+    </div>
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-info">
+            @TempData["Mensaje"]
+        </div>
+    }
+
+    @if (ViewBag.Mensaje != null)
+    {
+        <div class="alert alert-warning">
+            @ViewBag.Mensaje
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Identificación</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var usuario in Model)
+                            {
+                                <tr>
+
+                                    <td>@usuario.IdUsuario</td>
+
+                                    <td>@usuario.Identificacion</td>
+
+                                    <td>@usuario.Nombre</td>
+
+                                    <td>@usuario.Correo</td>
+
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            @usuario.NombreRol
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @if (usuario.Estado)
+                                        {
+                                            <span class="badge bg-success">
+                                                Activo
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                Inactivo
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td class="text-end">
+
+                                        <a asp-controller="Usuario"
+                                           asp-action="Editar"
+                                           asp-route-id="@usuario.IdUsuario"
+                                           class="btn btn-sm btn-outline-primary">
+
+                                            <i class="bi bi-pencil"></i>
+                                            Editar
+
+                                        </a>
+
+                                        @if (usuario.Estado)
+                                        {
+                                            <a asp-controller="Usuario"
+                                               asp-action="CambiarEstado"
+                                               asp-route-id="@usuario.IdUsuario"
+                                               asp-route-estado="false"
+                                               class="btn btn-sm btn-outline-danger">
+
+                                                <i class="bi bi-person-x"></i>
+                                                Desactivar
+
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Usuario"
+                                               asp-action="CambiarEstado"
+                                               asp-route-id="@usuario.IdUsuario"
+                                               asp-route-estado="true"
+                                               class="btn btn-sm btn-outline-success">
+
+                                                <i class="bi bi-person-check"></i>
+                                                Activar
+
+                                            </a>
+                                        }
+
+                                    </td>
+
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7"
+                                    class="text-center text-muted py-4">
+
+                                    No hay usuarios registrados.
+
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>

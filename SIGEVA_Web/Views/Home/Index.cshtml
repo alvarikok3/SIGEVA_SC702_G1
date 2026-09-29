@@ -1,0 +1,40 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+    var nombre = Context.Session.GetString("Nombre") ?? "Usuario";
+}
+
+<div class="welcome-banner">
+    <h2>Bienvenido, @nombre</h2>
+    <span class="welcome-badge">Clínica</span>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card">
+            <div class="icon-wrap"><i class="bi bi-people"></i></div>
+            <h5>Usuarios</h5>
+            <a asp-controller="Usuario" asp-action="Index" class="btn btn-sm btn-sg">Abrir</a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card">
+            <div class="icon-wrap"><i class="bi bi-person-vcard"></i></div>
+            <h5>Pacientes</h5>
+            <a asp-controller="Paciente" asp-action="Index" class="btn btn-sm btn-sg">Abrir</a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card">
+            <div class="icon-wrap"><i class="bi bi-calendar2-week"></i></div>
+            <h5>Citas médicas</h5>
+            <a asp-controller="Cita" asp-action="Index" class="btn btn-sm btn-sg">Abrir</a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card">
+            <div class="icon-wrap"><i class="bi bi-hdd-rack"></i></div>
+            <h5>Equipos</h5>
+            <a asp-controller="Equipo" asp-action="Index" class="btn btn-sm btn-sg">Abrir</a>
+        </div>
+    </div>
+</div>
