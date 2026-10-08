@@ -68,7 +68,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
+builder.Services.AddScoped<IHistorialClinicoData, HistorialClinicoData>();
 var app = builder.Build();
 
 // Middleware de manejo de excepciones — debe ir primero
