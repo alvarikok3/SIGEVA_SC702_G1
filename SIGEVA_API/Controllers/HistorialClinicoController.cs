@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SIGEVA_API.Interfaces;
+using SIGEVA_API.Models;
 
 namespace SIGEVA_API.Controllers
 {
@@ -77,6 +78,18 @@ namespace SIGEVA_API.Controllers
                         mensaje =
                             "No fue posible registrar la consulta en la auditoría."
                     });
+            }
+
+            if (historial.Registros == null || !historial.Registros.Any())
+            {
+                return Ok(new
+                {
+                    historial.IdPaciente,
+                    historial.NombrePaciente,
+                    historial.Identificacion,
+                    mensaje = "El paciente no tiene registros clínicos disponibles.",
+                    registros = Array.Empty<HistorialClinicoRegistroModel>()
+                });
             }
 
             return Ok(historial);
