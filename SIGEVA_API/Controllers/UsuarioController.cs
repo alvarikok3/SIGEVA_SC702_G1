@@ -43,7 +43,11 @@ namespace SIGEVA_API.Controllers
             var usuario = _usuarioData.ValidarUsuario(model);
 
             if (usuario == null)
-                return Unauthorized("Credenciales incorrectas o usuario inactivo.");
+            {
+                return Unauthorized(
+                    "Acceso rechazado. Verifique sus credenciales y que su cuenta esté activa. " +
+                    "Si realizó 5 intentos fallidos, espere 15 minutos.");
+            }
 
             var token = _jwtService.GenerarToken(usuario);
 
@@ -56,6 +60,7 @@ namespace SIGEVA_API.Controllers
                 usuario.Correo
             });
         }
+   
 
         [HttpPost]
         [Route("RecuperarContrasena")]

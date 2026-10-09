@@ -1,10 +1,16 @@
+using SIGEVA_Web.Filters;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient();
 
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AccesoFilter());
+});
 
 var app = builder.Build();
 
@@ -15,13 +21,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseSession();
-
 app.UseAuthorization();
 
 app.MapControllerRoute(
