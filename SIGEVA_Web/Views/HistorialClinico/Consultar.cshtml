@@ -1,0 +1,99 @@
+﻿@model SIGEVA_Web.Models.HistorialClinicoModel
+
+@{
+    ViewData["Title"] = "Historial Clínico";
+}
+
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Historial Clínico</h2>
+            <p class="text-muted">
+                Consulta del expediente clínico del paciente
+            </p>
+        </div>
+
+        <a asp-controller="Paciente"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            Volver a Pacientes
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Información del paciente</h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <strong>ID del paciente:</strong>
+                    <p>@Model.IdPaciente</p>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <strong>Nombre completo:</strong>
+                    <p>@Model.NombrePaciente</p>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <strong>Identificación:</strong>
+                    <p>@Model.Identificacion</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Registros clínicos</h5>
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.Registros != null && Model.Registros.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo de registro</th>
+                                <th>Descripción</th>
+                                <th>Profesional</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var registro in
+                                Model.Registros.OrderByDescending(r => r.Fecha))
+                            {
+                                <tr>
+                                    <td>
+                                        @registro.Fecha.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td>@registro.TipoRegistro</td>
+                                    <td>@registro.Descripcion</td>
+                                    <td>@registro.Profesional</td>
+                                    <td>
+                                        @(registro.Estado ?? "Sin estado")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    Este paciente no tiene registros clínicos disponibles.
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

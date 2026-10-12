@@ -48,6 +48,13 @@
                                 </td>
                                 <td class="pe-3 text-end">
                                     <a asp-action="Editar" asp-route-id="@item.IdPaciente" class="btn btn-sm btn-sg-outline">Editar</a>
+                                    <a asp-controller="HistorialClinico"
+                                       asp-action="Consultar"
+                                       asp-route-id="@item.IdPaciente"
+                                       class="btn btn-sm btn-sg">
+                                        <i class="bi bi-file-medical me-1"></i>
+                                        Ver historial
+                                    </a>
                                     <a asp-action="CambiarEstado"
                                        asp-route-id="@item.IdPaciente"
                                        asp-route-estado="@(!item.Estado)"
