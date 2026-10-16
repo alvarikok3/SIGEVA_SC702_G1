@@ -18,6 +18,34 @@ namespace SIGEVA_Web.Controllers
             return client;
         }
 
+        private bool EsAdministrador()
+        {
+            var token = HttpContext.Session.GetString("Token");
+            var idRol = HttpContext.Session.GetInt32("IdRol");
+
+            return !string.IsNullOrWhiteSpace(token)
+                   && idRol == 1;
+        }
+
+        private IActionResult? ValidarAccesoAdministrativo()
+        {
+            var token = HttpContext.Session.GetString("Token");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (!EsAdministrador())
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para programar citas médicas.");
+            }
+
+            return null;
+        }
+
         private void CargarListas()
         {
             using var client = CrearCliente();
@@ -269,6 +297,119 @@ namespace SIGEVA_Web.Controllers
                 return RedirectToAction("Index", "Login");
 
             throw new Exception("Ocurrió un error al consultar el calendario de citas.");
+        }
+
+
+
+        [HttpGet]
+        public IActionResult ProgramarCitaAdministrativa()
+        {
+            var acceso = ValidarAccesoAdministrativo();
+
+            if (acceso != null)
+            {
+                return acceso;
+            }
+
+            CargarListas();
+
+            return View("Registrar", new CitaModel
+            {
+                FechaHora = DateTime.Now.AddHours(1),
+                EstadoCita = "Programada"
+            });
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ProgramarCitaAdministrativa(CitaModel model)
+        {
+
+            var acceso = ValidarAccesoAdministrativo();
+
+            if (acceso != null)
+            {
+                return acceso;
+            }
+
+            if (model.IdPaciente <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.IdPaciente),
+                    "Debe seleccionar un paciente.");
+            }
+
+            if (model.IdUsuario <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.IdUsuario),
+                    "Debe seleccionar un médico.");
+            }
+
+            if (model.FechaHora <= DateTime.Now)
+            {
+                ModelState.AddModelError(
+                    nameof(model.FechaHora),
+                    "Seleccione una fecha y hora futuras.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                CargarListas();
+                return View("Registrar", model);
+            }
+
+            using var client = CrearCliente();
+
+            var urlApi = _config["Valores:UrlApi"]
+                + "Cita/ProgramarCitaAdministrativa";
+
+            var response = client.PostAsJsonAsync(urlApi, model).Result;
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                TempData["Mensaje"] =
+                    "Cita programada y registrada en auditoría correctamente.";
+                TempData["Tipo"] = "success";
+
+                return RedirectToAction("Calendario",
+                    new { fecha = model.FechaHora.ToString("yyyy-MM-dd") });
+            }
+
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                ViewBag.Mensaje =
+                    "El médico ya tiene una cita en ese horario.";
+                ViewBag.Tipo = "warning";
+
+                CargarListas();
+                return View("Registrar", model);
+            }
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                ViewBag.Mensaje =
+                    response.Content.ReadAsStringAsync().Result;
+                ViewBag.Tipo = "danger";
+
+                CargarListas();
+                return View("Registrar", model);
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return StatusCode(403,
+                    "No tiene permisos para programar citas.");
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            throw new Exception(
+                "Ocurrió un error al programar la cita.");
         }
 
         #endregion

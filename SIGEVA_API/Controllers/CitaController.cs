@@ -5,6 +5,7 @@ using Microsoft.Data.SqlClient;
 using SIGEVA_API.Models;
 using System.Data;
 
+
 namespace SIGEVA_API.Controllers
 {
     [Route("api/[controller]")]
@@ -89,7 +90,25 @@ namespace SIGEVA_API.Controllers
             {
                 return BadRequest("La fecha y hora de la cita deben ser futuras.");
             }
+            // Obtener el usuario que inició sesión desde el JWT.
+            var idUsuarioClaim = User.FindFirst("IdUsuario")?.Value;
 
+            // Comprobar que el identificador sea válido.
+            if (!int.TryParse(idUsuarioClaim, out int idUsuarioAutenticado))
+            {
+                return Unauthorized(
+                    "No se pudo identificar al usuario autenticado.");
+            }
+
+            // Obtener el rol del usuario autenticado.
+            var idRolClaim = User.FindFirst("IdRol")?.Value;
+
+            if (!int.TryParse(idRolClaim, out int idRolAutenticado))
+            {
+                return StatusCode(
+                    403,
+                    "No se pudo identificar el rol del usuario.");
+            }
             using var context = new SqlConnection(
                 _config["ConnectionStrings:DefaultConnection"]);
 
@@ -124,6 +143,100 @@ namespace SIGEVA_API.Controllers
             return BadRequest(
                 "No se pudo registrar la cita. Verifique que el paciente y el médico estén activos.");
         }
+
+
+        [Authorize]
+        [HttpPost]
+        [Route("ProgramarCitaAdministrativa")]
+        public IActionResult ProgramarCitaAdministrativa(
+            [FromBody] CitaModel model)
+        {
+            // 1. Validar los datos recibidos.
+            if (model == null)
+            {
+                return BadRequest("Los datos de la cita son obligatorios.");
+            }
+
+            if (model.IdPaciente <= 0)
+            {
+                return BadRequest("Debe seleccionar un paciente válido.");
+            }
+
+            if (model.IdUsuario <= 0)
+            {
+                return BadRequest("Debe seleccionar un médico válido.");
+            }
+
+            if (model.FechaHora <= DateTime.Now)
+            {
+                return BadRequest("La fecha y hora deben ser futuras.");
+            }
+
+            // 2. Obtener el usuario autenticado desde el JWT.
+            var idUsuarioClaim = User.FindFirst("IdUsuario")?.Value;
+            var idRolClaim = User.FindFirst("IdRol")?.Value;
+
+            if (!int.TryParse(idUsuarioClaim, out int idUsuarioAutenticado))
+            {
+                return Unauthorized(
+                    "No se pudo identificar al usuario autenticado.");
+            }
+
+            if (!int.TryParse(idRolClaim, out int idRolAutenticado))
+            {
+                return StatusCode(403, "No se pudo identificar el rol.");
+            }
+
+            // 3. Verificar permisos administrativos.
+            if (idRolAutenticado != 1)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para programar citas médicas.");
+            }
+
+            // 4. Conectar con SQL Server.
+            using var context = new SqlConnection(
+                _config["ConnectionStrings:DefaultConnection"]);
+
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@IdPaciente", model.IdPaciente);
+            parameters.Add("@IdUsuario", model.IdUsuario);
+            parameters.Add("@IdUsuarioAdministrativo", idUsuarioAutenticado);
+            parameters.Add("@FechaHora", model.FechaHora);
+            parameters.Add("@Observaciones", model.Observaciones);
+
+            // 5. Ejecutar el procedimiento almacenado.
+            var response = context.ExecuteScalar<int>(
+                "dbo.ProgramarCitaAdministrativa",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            // 6. Interpretar el resultado.
+            if (response == 1)
+            {
+                return Ok(
+                    "Cita programada correctamente y registrada en auditoría.");
+            }
+
+            if (response == -1)
+            {
+                return Conflict(
+                    "El médico ya tiene una cita en ese horario.");
+            }
+
+            if (response == -2)
+            {
+                return StatusCode(
+                    403,
+                    "El usuario no tiene permisos administrativos.");
+            }
+
+            return BadRequest(
+                "No se pudo programar la cita. Verifique los datos ingresados.");
+        }
+
 
 
         [Authorize]

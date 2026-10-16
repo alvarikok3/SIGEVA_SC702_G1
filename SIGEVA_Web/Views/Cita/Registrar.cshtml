@@ -1,49 +1,116 @@
 @model CitaModel
+
 @{
-    ViewData["Title"] = "Registrar cita";
+    // Identificar si se está programando una cita administrativa.
+    var esAdministrativo =
+        ViewContext.RouteData.Values["action"]?.ToString()
+        == "ProgramarCitaAdministrativa";
+
+    ViewData["Title"] = esAdministrativo
+        ? "Programar cita médica"
+        : "Registrar cita";
+
     var pacientes = ViewBag.Pacientes as List<PacienteModel> ?? new();
     var medicos = ViewBag.Medicos as List<UsuarioListaModel> ?? new();
 }
 
 <div class="d-flex justify-content-end mb-3">
-    <a asp-action="Index" class="btn btn-sg-outline">Volver</a>
+    <a asp-controller="Cita"
+       asp-action="Index"
+       class="btn btn-sg-outline">
+        Volver
+    </a>
 </div>
 
 <div class="sg-card">
     <div class="card-body">
+
+        <h4 class="mb-3">
+            @(esAdministrativo
+                ? "Programación administrativa de citas"
+                : "Registro de cita médica")
+        </h4>
+
+        @* Mostrar mensajes de error o advertencia *@
         @if (ViewBag.Mensaje != null)
         {
-            <div class="alert alert-@ViewBag.Tipo text-center">@ViewBag.Mensaje</div>
+            <div class="alert alert-@ViewBag.Tipo text-center">
+                @ViewBag.Mensaje
+            </div>
         }
 
-        <form asp-action="Registrar" method="post">
+        <form asp-controller="Cita"
+              asp-action="@(esAdministrativo ? "ProgramarCitaAdministrativa" : "Registrar")"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            @* Mostrar errores de validación *@
             <div asp-validation-summary="All"
-                 class="text-danger mb-3"></div>
+                 class="text-danger mb-3">
+            </div>
+
             <div class="row g-3">
+
+                @* Selección del paciente *@
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="IdPaciente">Paciente</label>
-                    <select asp-for="IdPaciente" class="form-select" required>
-                        <option value="">-- Seleccione --</option>
+                    <label asp-for="IdPaciente"
+                           class="form-label fw-semibold">
+                        Paciente
+                    </label>
+
+                    <select asp-for="IdPaciente"
+                            class="form-select"
+                            required>
+
+                        <option value="">-- Seleccione un paciente --</option>
+
                         @foreach (var p in pacientes)
                         {
-                            <option value="@p.IdPaciente">@p.Identificacion - @p.Nombre</option>
+                            <option value="@p.IdPaciente">
+                                @p.Identificacion - @p.Nombre
+                            </option>
                         }
                     </select>
+
+                    <span asp-validation-for="IdPaciente"
+                          class="text-danger"></span>
                 </div>
+
+                @* Selección del médico *@
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="IdUsuario">Médico / responsable</label>
-                    <select asp-for="IdUsuario" class="form-select" required>
-                        <option value="">-- Seleccione --</option>
+                    <label asp-for="IdUsuario"
+                           class="form-label fw-semibold">
+                        Médico / responsable
+                    </label>
+
+                    <select asp-for="IdUsuario"
+                            class="form-select"
+                            required>
+
+                        <option value="">-- Seleccione un médico --</option>
+
                         @foreach (var m in medicos)
                         {
-                            <option value="@m.IdUsuario">@m.Nombre (@m.NombreRol)</option>
+                            <option value="@m.IdUsuario">
+                                @m.Nombre (@m.NombreRol)
+                            </option>
                         }
                     </select>
+
+                    <span asp-validation-for="IdUsuario"
+                          class="text-danger"></span>
                 </div>
+
+                @* Fecha y hora de la cita *@
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="FechaHora">Fecha y hora</label>
-                    <input type="datetime-local"
-                           asp-for="FechaHora"
+                    <label asp-for="FechaHora"
+                           class="form-label fw-semibold">
+                        Fecha y hora
+                    </label>
+
+                    <input asp-for="FechaHora"
+                           type="datetime-local"
                            class="form-control"
                            min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                            required />
@@ -51,23 +118,82 @@
                     <span asp-validation-for="FechaHora"
                           class="text-danger"></span>
                 </div>
+
+                @* Estado de la cita *@
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="EstadoCita">Estado</label>
-                    <select asp-for="EstadoCita" class="form-select" required>
-                        <option value="Programada">Programada</option>
-                        <option value="Confirmada">Confirmada</option>
-                        <option value="Cancelada">Cancelada</option>
-                        <option value="Atendida">Atendida</option>
-                    </select>
+                    <label asp-for="EstadoCita"
+                           class="form-label fw-semibold">
+                        Estado
+                    </label>
+
+                    @if (esAdministrativo)
+                    {
+                        @* Las citas administrativas se crean programadas *@
+                        <input type="text"
+                               class="form-control"
+                               value="Programada"
+                               readonly />
+
+                        <input type="hidden"
+                               name="EstadoCita"
+                               value="Programada" />
+                    }
+                    else
+                    {
+                        @* Mantener los estados originales de HU-CIT-001 *@
+                        <select asp-for="EstadoCita"
+                                class="form-select"
+                                required>
+
+                            <option value="Programada">Programada</option>
+                            <option value="Confirmada">Confirmada</option>
+                            <option value="Cancelada">Cancelada</option>
+                            <option value="Atendida">Atendida</option>
+                        </select>
+                    }
+
+                    <span asp-validation-for="EstadoCita"
+                          class="text-danger"></span>
                 </div>
+
+                @* Observaciones opcionales *@
                 <div class="col-12">
-                    <label class="form-label fw-semibold" asp-for="Observaciones">Observaciones</label>
-                    <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
+                    <label asp-for="Observaciones"
+                           class="form-label fw-semibold">
+                        Observaciones
+                    </label>
+
+                    <textarea asp-for="Observaciones"
+                              class="form-control"
+                              rows="3"
+                              maxlength="500"
+                              placeholder="Ingrese observaciones adicionales (opcional)">
+                    </textarea>
+
+                    <span asp-validation-for="Observaciones"
+                          class="text-danger"></span>
                 </div>
+
             </div>
-            <div class="mt-4">
-                <button type="submit" class="btn btn-sg">Guardar</button>
+
+            @* Botones del formulario *@
+            <div class="mt-4 d-flex gap-2">
+
+                <button type="submit" class="btn btn-sg">
+                    @(esAdministrativo
+                        ? "Programar cita"
+                        : "Guardar")
+                </button>
+
+                <a asp-controller="Cita"
+                   asp-action="Index"
+                   class="btn btn-sg-outline">
+                    Cancelar
+                </a>
+
             </div>
+
         </form>
+
     </div>
 </div>
