@@ -64,56 +64,67 @@ namespace SIGEVA_API.Controllers
             return Ok(response);
         }
 
+
         [Authorize]
         [HttpPost]
         [Route("RegistrarCita")]
         public IActionResult RegistrarCita(CitaModel model)
         {
-            using var context = new SqlConnection(_config["ConnectionStrings:DefaultConnection"]);
+            if (model == null)
+            {
+                return BadRequest("Los datos de la cita son obligatorios.");
+            }
+
+            if (model.IdPaciente <= 0)
+            {
+                return BadRequest("Debe seleccionar un paciente válido.");
+            }
+
+            if (model.IdUsuario <= 0)
+            {
+                return BadRequest("Debe seleccionar un médico o responsable válido.");
+            }
+
+            if (model.FechaHora <= DateTime.Now)
+            {
+                return BadRequest("La fecha y hora de la cita deben ser futuras.");
+            }
+
+            using var context = new SqlConnection(
+                _config["ConnectionStrings:DefaultConnection"]);
 
             var parameters = new DynamicParameters();
+
             parameters.Add("@IdPaciente", model.IdPaciente);
             parameters.Add("@IdUsuario", model.IdUsuario);
             parameters.Add("@FechaHora", model.FechaHora);
-            parameters.Add("@EstadoCita", string.IsNullOrWhiteSpace(model.EstadoCita) ? "Programada" : model.EstadoCita);
+            parameters.Add(
+                "@EstadoCita",
+                string.IsNullOrWhiteSpace(model.EstadoCita)
+                    ? "Programada"
+                    : model.EstadoCita);
             parameters.Add("@Observaciones", model.Observaciones);
 
             var response = context.ExecuteScalar<int>(
-                "RegistrarCita",
+                "dbo.RegistrarCita",
                 parameters,
                 commandType: CommandType.StoredProcedure);
 
-            if (response > 0)
+            if (response == 1)
+            {
                 return Ok("Cita registrada correctamente.");
+            }
 
-            return BadRequest("No se pudo registrar la cita. Verifique el paciente y el médico.");
+            if (response == -1)
+            {
+                return Conflict(
+                    "El médico ya tiene una cita programada o confirmada en ese horario.");
+            }
+
+            return BadRequest(
+                "No se pudo registrar la cita. Verifique que el paciente y el médico estén activos.");
         }
 
-        [Authorize]
-        [HttpPut]
-        [Route("ActualizarCita")]
-        public IActionResult ActualizarCita(CitaModel model)
-        {
-            using var context = new SqlConnection(_config["ConnectionStrings:DefaultConnection"]);
-
-            var parameters = new DynamicParameters();
-            parameters.Add("@IdCita", model.IdCita);
-            parameters.Add("@IdPaciente", model.IdPaciente);
-            parameters.Add("@IdUsuario", model.IdUsuario);
-            parameters.Add("@FechaHora", model.FechaHora);
-            parameters.Add("@EstadoCita", model.EstadoCita);
-            parameters.Add("@Observaciones", model.Observaciones);
-
-            var response = context.ExecuteScalar<int>(
-                "ActualizarCita",
-                parameters,
-                commandType: CommandType.StoredProcedure);
-
-            if (response > 0)
-                return Ok("Cita actualizada correctamente.");
-
-            return BadRequest("No se pudo actualizar la cita. Verifique los datos.");
-        }
 
         [Authorize]
         [HttpPut]

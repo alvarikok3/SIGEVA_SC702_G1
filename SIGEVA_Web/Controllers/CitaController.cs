@@ -80,6 +80,32 @@ namespace SIGEVA_Web.Controllers
         [HttpPost]
         public IActionResult Registrar(CitaModel model)
         {
+            if (model.IdPaciente <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.IdPaciente),
+                    "Debe seleccionar un paciente.");
+            }
+
+            if (model.IdUsuario <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.IdUsuario),
+                    "Debe seleccionar un médico o responsable.");
+            }
+
+            if (model.FechaHora <= DateTime.Now)
+            {
+                ModelState.AddModelError(
+                    nameof(model.FechaHora),
+                    "Seleccione una fecha y hora futuras.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                CargarListas();
+                return View(model);
+            }
             using var client = CrearCliente();
             var urlApi = _config["Valores:UrlApi"] + "Cita/RegistrarCita";
             var response = client.PostAsJsonAsync(urlApi, model).Result;
@@ -95,7 +121,16 @@ namespace SIGEVA_Web.Controllers
                 CargarListas();
                 return View(model);
             }
+            else if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                ViewBag.Mensaje =
+                    "El horario seleccionado no está disponible. " +
+                    "Seleccione otra fecha u hora.";
 
+                ViewBag.Tipo = "warning";
+                CargarListas();
+                return View(model);
+            }
             if (response.StatusCode == HttpStatusCode.Unauthorized)
                 return RedirectToAction("Index", "Login");
 
