@@ -1,20 +1,31 @@
+@using Microsoft.AspNetCore.Http
 @model List<CitaModel>
 
 @{
     ViewData["Title"] = "Citas médicas";
+
     var esAdministrador = Context.Session.GetInt32("IdRol") == 1;
+
+    var pacientes = ViewBag.Pacientes as List<PacienteModel> ?? new();
+    var medicos = ViewBag.Medicos as List<UsuarioListaModel> ?? new();
+
+    var fechaFiltro = ViewBag.FechaFiltro as DateTime?;
+    var idUsuarioFiltro = ViewBag.IdUsuarioFiltro as int?;
+    var idPacienteFiltro = ViewBag.IdPacienteFiltro as int?;
+
+    var hayFiltros = fechaFiltro.HasValue
+        || idUsuarioFiltro.HasValue
+        || idPacienteFiltro.HasValue;
 }
 
-<div class="d-flex justify-content-end mb-3 gap-2">
+<div class="d-flex justify-content-end mb-3 gap-2 flex-wrap">
 
-    <a asp-action="Reporte"
-       class="btn btn-sg-outline">
+    <a asp-action="Reporte" class="btn btn-sg-outline">
         <i class="bi bi-file-earmark-bar-graph me-1"></i>
         Reporte
     </a>
 
-    <a asp-action="Calendario"
-       class="btn btn-sg-outline">
+    <a asp-action="Calendario" class="btn btn-sg-outline">
         <i class="bi bi-calendar3 me-1"></i>
         Calendario
     </a>
@@ -37,23 +48,133 @@
             Registrar cita
         </a>
     }
-
 </div>
+
+@* =========================================
+   HU-CIT-003 - FILTROS DE CITAS
+   ========================================= *@
+
+@if (esAdministrador)
+{
+    <div class="sg-card mb-3">
+        <div class="card-body">
+
+            <h5 class="mb-3">
+                <i class="bi bi-funnel me-2"></i>
+                Filtrar citas médicas
+            </h5>
+
+            <form asp-controller="Cita"
+                  asp-action="ConsultarCitasFiltradas"
+                  method="get">
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Fecha
+                        </label>
+
+                        <input type="date"
+                               name="fecha"
+                               class="form-control"
+                               value="@(fechaFiltro?.ToString("yyyy-MM-dd"))" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Médico / responsable
+                        </label>
+
+                        <select name="idUsuario" class="form-select">
+                            <option value="">Todos los médicos</option>
+
+                            @foreach (var medico in medicos)
+                            {
+                                if (idUsuarioFiltro == medico.IdUsuario)
+                                {
+                                    <option value="@medico.IdUsuario" selected>
+                                        @medico.Nombre
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@medico.IdUsuario">
+                                        @medico.Nombre
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Paciente
+                        </label>
+
+                        <select name="idPaciente" class="form-select">
+                            <option value="">Todos los pacientes</option>
+
+                            @foreach (var paciente in pacientes)
+                            {
+                                if (idPacienteFiltro == paciente.IdPaciente)
+                                {
+                                    <option value="@paciente.IdPaciente" selected>
+                                        @paciente.Identificacion - @paciente.Nombre
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@paciente.IdPaciente">
+                                        @paciente.Identificacion - @paciente.Nombre
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+
+                    <button type="submit" class="btn btn-sg">
+                        <i class="bi bi-search me-1"></i>
+                        Buscar citas
+                    </button>
+
+                    <a asp-controller="Cita"
+                       asp-action="ConsultarCitasFiltradas"
+                       class="btn btn-sg-outline">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Limpiar filtros
+                    </a>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+}
+
+@* =========================================
+   LISTADO DE CITAS
+   ========================================= *@
 
 @if (Model != null && Model.Count > 0)
 {
     <div class="sg-card">
         <div class="card-body p-0">
-            <div class="table-responsive">
 
+            <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
+
                     <thead>
                         <tr>
                             <th class="ps-3">Fecha</th>
                             <th>Paciente</th>
                             <th>Médico</th>
                             <th>Estado</th>
-                            <th class="pe-3"></th>
+                            <th class="pe-3">Acciones</th>
                         </tr>
                     </thead>
 
@@ -76,6 +197,7 @@
                                 </td>
 
                                 <td class="pe-3 text-end">
+
                                     <a asp-action="Editar"
                                        asp-route-id="@item.IdCita"
                                        class="btn btn-sm btn-sg-outline">
@@ -95,21 +217,45 @@
                                        class="btn btn-sm btn-outline-danger">
                                         Cancelar
                                     </a>
+
                                 </td>
                             </tr>
                         }
                     </tbody>
-                </table>
 
+                </table>
             </div>
+
         </div>
     </div>
 }
+
 else
 {
     <div class="sg-card">
         <div class="card-body text-center text-muted py-5">
-            No hay citas registradas.
+
+            <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+
+            @if (hayFiltros)
+            {
+                <h5>No se encontraron citas</h5>
+
+                <p class="mb-0">
+                    No existen citas médicas que coincidan
+                    con los filtros seleccionados.
+                </p>
+            }
+            else
+            {
+                <h5>No hay citas registradas</h5>
+
+                <p class="mb-0">
+                    Actualmente no existen citas médicas
+                    para mostrar.
+                </p>
+            }
+
         </div>
     </div>
 }

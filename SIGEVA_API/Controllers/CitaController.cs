@@ -283,6 +283,74 @@ namespace SIGEVA_API.Controllers
             return Ok(response);
         }
 
+
+        [Authorize]
+        [HttpGet]
+        [Route("ConsultarCitasFiltradas")]
+        public IActionResult ConsultarCitasFiltradas(
+            [FromQuery] DateTime? fecha,
+            [FromQuery] int? idUsuario,
+            [FromQuery] int? idPaciente)
+        {
+            // 1. Validar los parámetros opcionales.
+            if (idUsuario.HasValue && idUsuario.Value <= 0)
+            {
+                return BadRequest("El médico seleccionado no es válido.");
+            }
+
+            if (idPaciente.HasValue && idPaciente.Value <= 0)
+            {
+                return BadRequest("El paciente seleccionado no es válido.");
+            }
+
+            // 2. Identificar al usuario autenticado.
+            var idUsuarioClaim = User.FindFirst("IdUsuario")?.Value;
+            var idRolClaim = User.FindFirst("IdRol")?.Value;
+
+            if (!int.TryParse(idUsuarioClaim, out int idUsuarioAutenticado))
+            {
+                return Unauthorized(
+                    "No se pudo identificar al usuario autenticado.");
+            }
+
+            if (!int.TryParse(idRolClaim, out int idRolAutenticado))
+            {
+                return StatusCode(
+                    403,
+                    "No se pudo identificar el rol del usuario.");
+            }
+
+            // 3. Control de acceso.
+            // Rol 1: Administrador.
+            // Rol 2: Usuario, pendiente de definir sus permisos clínicos.
+            if (idRolAutenticado != 1)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para consultar esta agenda.");
+            }
+
+            // 4. Preparar los parámetros de SQL Server.
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@Fecha", fecha?.Date, DbType.Date);
+            parameters.Add("@IdUsuario", idUsuario, DbType.Int32);
+            parameters.Add("@IdPaciente", idPaciente, DbType.Int32);
+
+            // 5. Ejecutar el procedimiento almacenado.
+            using var context = new SqlConnection(
+                _config["ConnectionStrings:DefaultConnection"]);
+
+            var citas = context.Query<CitaModel>(
+                "dbo.ConsultarCitasFiltradas",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            ).ToList();
+
+            // 6. Devolver la lista, incluso cuando esté vacía.
+            return Ok(citas);
+        }
+
         #endregion
     }
 }

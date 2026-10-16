@@ -85,6 +85,9 @@ namespace SIGEVA_Web.Controllers
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var datos = response.Content.ReadFromJsonAsync<List<CitaModel>>().Result;
+
+                CargarListas();
+
                 return View(datos);
             }
 
@@ -92,6 +95,104 @@ namespace SIGEVA_Web.Controllers
                 return RedirectToAction("Index", "Login");
 
             throw new Exception("Ocurrió un error al consultar las citas.");
+        }
+
+        [HttpGet]
+        public IActionResult ConsultarCitasFiltradas(
+            DateTime? fecha,
+            int? idUsuario,
+            int? idPaciente)
+        {
+            // 1. Verificar que exista una sesión administrativa.
+            var token = HttpContext.Session.GetString("Token");
+            var idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (idRol != 1)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para consultar esta agenda.");
+            }
+
+            // 2. Validar los filtros recibidos.
+            if (idUsuario.HasValue && idUsuario.Value <= 0)
+            {
+                return BadRequest("El médico seleccionado no es válido.");
+            }
+
+            if (idPaciente.HasValue && idPaciente.Value <= 0)
+            {
+                return BadRequest("El paciente seleccionado no es válido.");
+            }
+
+            // 3. Construir la dirección de la API.
+            var urlApi = _config["Valores:UrlApi"]
+                + "Cita/ConsultarCitasFiltradas";
+
+            var filtros = new List<string>();
+
+            if (fecha.HasValue)
+            {
+                filtros.Add(
+                    "fecha=" + fecha.Value.ToString("yyyy-MM-dd"));
+            }
+
+            if (idUsuario.HasValue)
+            {
+                filtros.Add("idUsuario=" + idUsuario.Value);
+            }
+
+            if (idPaciente.HasValue)
+            {
+                filtros.Add("idPaciente=" + idPaciente.Value);
+            }
+
+            if (filtros.Count > 0)
+            {
+                urlApi += "?" + string.Join("&", filtros);
+            }
+
+            // 4. Consultar la API utilizando el JWT de la sesión.
+            using var client = CrearCliente();
+
+            var response = client.GetAsync(urlApi).Result;
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                var citas = response.Content
+                    .ReadFromJsonAsync<List<CitaModel>>().Result
+                    ?? new List<CitaModel>();
+
+                // 5. Cargar pacientes y médicos para los filtros.
+                CargarListas();
+
+                // 6. Conservar los filtros seleccionados.
+                ViewBag.FechaFiltro = fecha;
+                ViewBag.IdUsuarioFiltro = idUsuario;
+                ViewBag.IdPacienteFiltro = idPaciente;
+
+                return View("Index", citas);
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para consultar las citas.");
+            }
+
+            throw new Exception(
+                "Ocurrió un error al consultar las citas filtradas.");
         }
 
         #endregion
