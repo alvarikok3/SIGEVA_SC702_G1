@@ -75,16 +75,45 @@ namespace SIGEVA_Web.Controllers
 
         #region Consulta
 
+
         [HttpGet]
         public IActionResult Index()
         {
+            var token = HttpContext.Session.GetString("Token");
+            var idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Si es médico, dirigirlo a su propia agenda.
+            if (idRol == 3)
+            {
+                return RedirectToAction(
+                    nameof(ConsultarCitasFiltradas));
+            }
+
+            // Solo el administrador puede consultar
+            // el listado general de citas.
+            if (idRol != 1)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para consultar las citas.");
+            }
+
+            // Código original de Index().
             using var client = CrearCliente();
-            var urlApi = _config["Valores:UrlApi"] + "Cita/ConsultarCitas";
-            var response = client.GetAsync(urlApi).Result;
+
+            var response = client.GetAsync(
+                _config["Valores:UrlApi"] +
+                "Cita/ConsultarCitas").Result;
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var datos = response.Content.ReadFromJsonAsync<List<CitaModel>>().Result;
+                var datos = response.Content
+                    .ReadFromJsonAsync<List<CitaModel>>().Result;
 
                 CargarListas();
 
@@ -92,10 +121,14 @@ namespace SIGEVA_Web.Controllers
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 return RedirectToAction("Index", "Login");
+            }
 
-            throw new Exception("Ocurrió un error al consultar las citas.");
+            throw new Exception(
+                "Ocurrió un error al consultar las citas.");
         }
+
 
         [HttpGet]
         public IActionResult ConsultarCitasFiltradas(
@@ -112,12 +145,21 @@ namespace SIGEVA_Web.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (idRol != 1)
+
+            if (idRol != 1 && idRol != 3)
             {
                 return StatusCode(
                     403,
                     "No tiene permisos para consultar esta agenda.");
             }
+
+            // El médico consulta únicamente su agenda.
+            // La API determina su IdUsuario desde el JWT.
+            if (idRol == 3)
+            {
+                idUsuario = null;
+            }
+
 
             // 2. Validar los filtros recibidos.
             if (idUsuario.HasValue && idUsuario.Value <= 0)
@@ -290,49 +332,151 @@ namespace SIGEVA_Web.Controllers
             throw new Exception("Ocurrió un error al consultar la cita.");
         }
 
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Editar(CitaModel model)
         {
             using var client = CrearCliente();
-            var urlApi = _config["Valores:UrlApi"] + "Cita/ActualizarCita";
+
+            var urlApi = _config["Valores:UrlApi"]
+                + "Cita/ActualizarCita";
+
             var response = client.PutAsJsonAsync(urlApi, model).Result;
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
+                TempData["Mensaje"] =
+                    "Cita médica actualizada correctamente.";
+
+                TempData["Tipo"] = "success";
+
                 return RedirectToAction("Index");
-            }
-            else if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                ViewBag.Mensaje = response.Content.ReadAsStringAsync().Result;
-                ViewBag.Tipo = "danger";
-                CargarListas();
-                return View(model);
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 return RedirectToAction("Index", "Login");
+            }
 
-            throw new Exception("Ocurrió un error al actualizar la cita.");
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para editar citas médicas.");
+            }
+
+            // Obtener el mensaje real devuelto por la API.
+            var detalleError = response.Content
+                .ReadAsStringAsync().Result;
+
+            ViewBag.Mensaje =
+                $"Error HTTP {(int)response.StatusCode} " +
+                $"({response.StatusCode}). " +
+                $"Detalle: {detalleError}";
+
+            ViewBag.Tipo = "danger";
+
+            CargarListas();
+
+            return View(model);
         }
+
 
         #endregion
 
         #region Estado
 
-        [HttpGet]
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult CambiarEstado(int id, string estado)
         {
+            // 1. Verificar permisos administrativos.
+            var acceso = ValidarAccesoAdministrativo();
+
+            if (acceso != null)
+            {
+                return acceso;
+            }
+
+            // 2. Validar los datos recibidos.
+            if (id <= 0)
+            {
+                TempData["Mensaje"] = "La cita seleccionada no es válida.";
+                TempData["Tipo"] = "danger";
+
+                return RedirectToAction("Index");
+            }
+
+            if (estado != "Confirmada" && estado != "Cancelada")
+            {
+                TempData["Mensaje"] =
+                    "Estado inválido. Solo se permite confirmar o cancelar citas.";
+
+                TempData["Tipo"] = "danger";
+
+                return RedirectToAction("Index");
+            }
+
+            // 3. Preparar la petición a la API.
             using var client = CrearCliente();
-            var urlApi = _config["Valores:UrlApi"] + $"Cita/CambiarEstadoCita/{id}/{estado}";
+
+            var urlApi = _config["Valores:UrlApi"]
+                + $"Cita/ActualizarEstadoCitaAdministrativa/{id}/{estado}";
+
             var response = client.PutAsync(urlApi, null).Result;
 
-            if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.BadRequest)
-                return RedirectToAction("Index");
+            // 4. Interpretar la respuesta.
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                TempData["Mensaje"] = estado == "Cancelada"
+                    ? "Cita cancelada correctamente. El horario quedó disponible y la acción fue auditada."
+                    : "Cita confirmada correctamente y registrada en auditoría.";
 
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                TempData["Tipo"] = "success";
+            }
+            else if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                TempData["Mensaje"] =
+                    response.Content.ReadAsStringAsync().Result;
+
+                TempData["Tipo"] = "danger";
+            }
+            else if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                TempData["Mensaje"] =
+                    "No se permite realizar este cambio de estado.";
+
+                TempData["Tipo"] = "warning";
+            }
+            else if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                TempData["Mensaje"] =
+                    "La cita médica no existe.";
+
+                TempData["Tipo"] = "danger";
+            }
+            else if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return StatusCode(
+                    403,
+                    "No tiene permisos para modificar citas médicas.");
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 return RedirectToAction("Index", "Login");
+            }
+            else
+            {
+                TempData["Mensaje"] =
+                    "Ocurrió un error al actualizar el estado de la cita.";
 
-            throw new Exception("Ocurrió un error al cambiar el estado de la cita.");
+                TempData["Tipo"] = "danger";
+            }
+
+            // 5. Volver al listado actualizado.
+            return RedirectToAction("Index");
         }
 
         #endregion

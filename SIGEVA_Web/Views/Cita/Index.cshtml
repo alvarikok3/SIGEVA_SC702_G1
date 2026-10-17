@@ -5,25 +5,50 @@
     ViewData["Title"] = "Citas médicas";
 
     var esAdministrador = Context.Session.GetInt32("IdRol") == 1;
+    var esMedico = Context.Session.GetInt32("IdRol") == 3;
 
     var pacientes = ViewBag.Pacientes as List<PacienteModel> ?? new();
     var medicos = ViewBag.Medicos as List<UsuarioListaModel> ?? new();
 
-    var fechaFiltro = ViewBag.FechaFiltro as DateTime?;
-    var idUsuarioFiltro = ViewBag.IdUsuarioFiltro as int?;
-    var idPacienteFiltro = ViewBag.IdPacienteFiltro as int?;
+    DateTime? fechaFiltro = ViewBag.FechaFiltro;
+    int? idUsuarioFiltro = ViewBag.IdUsuarioFiltro;
+    int? idPacienteFiltro = ViewBag.IdPacienteFiltro;
 
     var hayFiltros = fechaFiltro.HasValue
         || idUsuarioFiltro.HasValue
         || idPacienteFiltro.HasValue;
 }
 
+@* MENSAJES DEL SISTEMA *@
+
+@if (TempData["Mensaje"] != null)
+{
+    var tipo = TempData["Tipo"]?.ToString() ?? "info";
+
+    <div class="alert alert-@tipo alert-dismissible fade show"
+         role="alert">
+
+        @TempData["Mensaje"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Cerrar">
+        </button>
+    </div>
+}
+
+@* BOTONES SUPERIORES *@
+
 <div class="d-flex justify-content-end mb-3 gap-2 flex-wrap">
 
-    <a asp-action="Reporte" class="btn btn-sg-outline">
-        <i class="bi bi-file-earmark-bar-graph me-1"></i>
-        Reporte
-    </a>
+    @if (esAdministrador)
+    {
+        <a asp-action="Reporte" class="btn btn-sg-outline">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i>
+            Reporte
+        </a>
+    }
 
     <a asp-action="Calendario" class="btn btn-sg-outline">
         <i class="bi bi-calendar3 me-1"></i>
@@ -39,22 +64,11 @@
             Programar cita médica
         </a>
     }
-    else
-    {
-        <a asp-controller="Cita"
-           asp-action="Registrar"
-           class="btn btn-sg">
-            <i class="bi bi-calendar-plus me-1"></i>
-            Registrar cita
-        </a>
-    }
 </div>
 
-@* =========================================
-   HU-CIT-003 - FILTROS DE CITAS
-   ========================================= *@
+@* HU-CIT-003 - FILTROS *@
 
-@if (esAdministrador)
+@if (esAdministrador || esMedico)
 {
     <div class="sg-card mb-3">
         <div class="card-body">
@@ -81,31 +95,34 @@
                                value="@(fechaFiltro?.ToString("yyyy-MM-dd"))" />
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">
-                            Médico / responsable
-                        </label>
+                    @if (esAdministrador)
+                    {
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">
+                                Médico / responsable
+                            </label>
 
-                        <select name="idUsuario" class="form-select">
-                            <option value="">Todos los médicos</option>
+                            <select name="idUsuario" class="form-select">
+                                <option value="">Todos los médicos</option>
 
-                            @foreach (var medico in medicos)
-                            {
-                                if (idUsuarioFiltro == medico.IdUsuario)
+                                @foreach (var medico in medicos)
                                 {
-                                    <option value="@medico.IdUsuario" selected>
-                                        @medico.Nombre
-                                    </option>
+                                    if (idUsuarioFiltro == medico.IdUsuario)
+                                    {
+                                        <option value="@medico.IdUsuario" selected>
+                                            @medico.Nombre
+                                        </option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@medico.IdUsuario">
+                                            @medico.Nombre
+                                        </option>
+                                    }
                                 }
-                                else
-                                {
-                                    <option value="@medico.IdUsuario">
-                                        @medico.Nombre
-                                    </option>
-                                }
-                            }
-                        </select>
-                    </div>
+                            </select>
+                        </div>
+                    }
 
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">
@@ -151,14 +168,11 @@
 
                 </div>
             </form>
-
         </div>
     </div>
 }
 
-@* =========================================
-   LISTADO DE CITAS
-   ========================================= *@
+@* LISTADO DE CITAS *@
 
 @if (Model != null && Model.Count > 0)
 {
@@ -174,7 +188,11 @@
                             <th>Paciente</th>
                             <th>Médico</th>
                             <th>Estado</th>
-                            <th class="pe-3">Acciones</th>
+
+                            @if (esAdministrador)
+                            {
+                                <th class="pe-3 text-end">Acciones</th>
+                            }
                         </tr>
                     </thead>
 
@@ -196,29 +214,68 @@
                                     </span>
                                 </td>
 
-                                <td class="pe-3 text-end">
+                                @if (esAdministrador)
+                                {
+                                    <td class="pe-3 text-end">
 
-                                    <a asp-action="Editar"
-                                       asp-route-id="@item.IdCita"
-                                       class="btn btn-sm btn-sg-outline">
-                                        Editar
-                                    </a>
+                                        <a asp-action="Editar"
+                                           asp-route-id="@item.IdCita"
+                                           class="btn btn-sm btn-sg-outline">
+                                            Editar
+                                        </a>
 
-                                    <a asp-action="CambiarEstado"
-                                       asp-route-id="@item.IdCita"
-                                       asp-route-estado="Confirmada"
-                                       class="btn btn-sm btn-outline-success">
-                                        Confirmar
-                                    </a>
+                                        @if (item.EstadoCita == "Programada")
+                                        {
+                                            <form asp-controller="Cita"
+                                                  asp-action="CambiarEstado"
+                                                  method="post"
+                                                  class="d-inline">
 
-                                    <a asp-action="CambiarEstado"
-                                       asp-route-id="@item.IdCita"
-                                       asp-route-estado="Cancelada"
-                                       class="btn btn-sm btn-outline-danger">
-                                        Cancelar
-                                    </a>
+                                                @Html.AntiForgeryToken()
 
-                                </td>
+                                                <input type="hidden"
+                                                       name="id"
+                                                       value="@item.IdCita" />
+
+                                                <input type="hidden"
+                                                       name="estado"
+                                                       value="Confirmada" />
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-success">
+                                                    Confirmar
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (item.EstadoCita == "Programada" ||
+                                             item.EstadoCita == "Confirmada")
+                                        {
+                                            <form asp-controller="Cita"
+                                                  asp-action="CambiarEstado"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('¿Está seguro de cancelar esta cita médica? Esta acción liberará el horario del médico.');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden"
+                                                       name="id"
+                                                       value="@item.IdCita" />
+
+                                                <input type="hidden"
+                                                       name="estado"
+                                                       value="Cancelada" />
+
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger">
+                                                    Cancelar
+                                                </button>
+                                            </form>
+                                        }
+
+                                    </td>
+                                }
                             </tr>
                         }
                     </tbody>
@@ -229,7 +286,6 @@
         </div>
     </div>
 }
-
 else
 {
     <div class="sg-card">
