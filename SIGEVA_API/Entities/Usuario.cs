@@ -1,4 +1,4 @@
-﻿namespace SIGEVA_API.Entities
+﻿anamespace SIGEVA_API.Entities
 {
     public class Usuario
     {
