@@ -1,66 +1,135 @@
-@model CitaModel
-@{
-    ViewData["Title"] = "Editar cita";
-    var pacientes = ViewBag.Pacientes as List<PacienteModel> ?? new();
-    var medicos = ViewBag.Medicos as List<UsuarioListaModel> ?? new();
-}
+@model SIGEVA_Web.Models.CitaModel
 
-<div class="d-flex justify-content-end mb-3">
-    <a asp-action="Index" class="btn btn-sg-outline">Volver</a>
-</div>
+@{
+    ViewData["Title"] = "Editar cita médica";
+
+    var pacientes = ViewBag.Pacientes
+        as List<SIGEVA_Web.Models.PacienteModel> ?? new();
+
+    var medicos = ViewBag.Medicos
+        as List<SIGEVA_Web.Models.UsuarioListaModel> ?? new();
+}
 
 <div class="sg-card">
     <div class="card-body">
+
+        <h4 class="mb-4">Editar cita médica</h4>
+
         @if (ViewBag.Mensaje != null)
         {
-            <div class="alert alert-@ViewBag.Tipo text-center">@ViewBag.Mensaje</div>
+            var tipo = ViewBag.Tipo ?? "danger";
+
+            <div class="alert alert-@tipo" role="alert">
+                @ViewBag.Mensaje
+            </div>
         }
 
-        <form asp-action="Editar" method="post">
-            <input type="hidden" asp-for="IdCita" />
+        <form asp-controller="Cita"
+              asp-action="Editar"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <input asp-for="IdCita" type="hidden" />
+
             <div class="row g-3">
+
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="IdPaciente">Paciente</label>
-                    <select asp-for="IdPaciente" class="form-select" required>
-                        <option value="">-- Seleccione --</option>
-                        @foreach (var p in pacientes)
+                    <label asp-for="IdPaciente"
+                           class="form-label">
+                        Paciente
+                    </label>
+
+                    <select asp-for="IdPaciente"
+                            class="form-select"
+                            required>
+
+                        <option value="">Seleccione un paciente</option>
+
+                        @foreach (var paciente in pacientes)
                         {
-                            <option value="@p.IdPaciente">@p.Identificacion - @p.Nombre</option>
+                            <option value="@paciente.IdPaciente">
+                                @paciente.Identificacion - @paciente.Nombre
+                            </option>
                         }
                     </select>
+
+                    <span asp-validation-for="IdPaciente"
+                          class="text-danger"></span>
                 </div>
+
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="IdUsuario">Médico / responsable</label>
-                    <select asp-for="IdUsuario" class="form-select" required>
-                        <option value="">-- Seleccione --</option>
-                        @foreach (var m in medicos)
+                    <label asp-for="IdUsuario"
+                           class="form-label">
+                        Médico
+                    </label>
+
+                    <select asp-for="IdUsuario"
+                            class="form-select"
+                            required>
+
+                        <option value="">Seleccione un médico</option>
+
+                        @foreach (var medico in medicos)
                         {
-                            <option value="@m.IdUsuario">@m.Nombre (@m.NombreRol)</option>
+                            <option value="@medico.IdUsuario">
+                                @medico.Nombre
+                            </option>
                         }
                     </select>
+
+                    <span asp-validation-for="IdUsuario"
+                          class="text-danger"></span>
                 </div>
+
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="FechaHora">Fecha y hora</label>
-                    <input type="datetime-local" name="FechaHora" class="form-control" required
-                           value="@Model.FechaHora.ToString("yyyy-MM-ddTHH:mm")" />
+                    <label asp-for="FechaHora"
+                           class="form-label">
+                        Fecha y hora
+                    </label>
+
+                    <input asp-for="FechaHora"
+                           type="datetime-local"
+                           asp-format="{0:yyyy-MM-ddTHH:mm}"
+                           class="form-control"
+                           required />
+
+                    <span asp-validation-for="FechaHora"
+                          class="text-danger"></span>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold" asp-for="EstadoCita">Estado</label>
-                    <select asp-for="EstadoCita" class="form-select" required>
-                        <option value="Programada">Programada</option>
-                        <option value="Confirmada">Confirmada</option>
-                        <option value="Cancelada">Cancelada</option>
-                        <option value="Atendida">Atendida</option>
-                    </select>
-                </div>
+
                 <div class="col-12">
-                    <label class="form-label fw-semibold" asp-for="Observaciones">Observaciones</label>
-                    <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
+                    <label asp-for="Observaciones"
+                           class="form-label">
+                        Observaciones
+                    </label>
+
+                    <textarea asp-for="Observaciones"
+                              class="form-control"
+                              rows="4"
+                              maxlength="500"></textarea>
                 </div>
+
             </div>
-            <div class="mt-4">
-                <button type="submit" class="btn btn-sg">Actualizar</button>
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit" class="btn btn-sg">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Guardar cambios
+                </button>
+
+                <a asp-controller="Cita"
+                   asp-action="Index"
+                   class="btn btn-sg-outline">
+                    Cancelar
+                </a>
+
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
