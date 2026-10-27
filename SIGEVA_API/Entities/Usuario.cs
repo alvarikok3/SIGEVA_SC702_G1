@@ -1,4 +1,5 @@
-﻿namespace SIGEVA_API.Entities
+﻿
+namespace SIGEVA_API.Entities
 {
     public class Usuario
     {
@@ -10,5 +11,8 @@
         public string Contrasena { get; set; } = string.Empty;
         public bool Estado { get; set; }
         public DateTime FechaRegistro { get; set; }
+
+        // HU-AUT-004: Autenticación de doble factor
+        public bool DobleFactorActivo { get; set; }
     }
 }
